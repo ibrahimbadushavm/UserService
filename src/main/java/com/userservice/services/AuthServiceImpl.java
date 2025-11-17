@@ -1,5 +1,6 @@
 package com.userservice.services;
 
+import com.userservice.exceptions.DuplicateUserException;
 import com.userservice.exceptions.InvalidPasswordException;
 import com.userservice.exceptions.SessionLimitExceedException;
 import com.userservice.exceptions.UseNotFoundException;
@@ -34,15 +35,14 @@ public class AuthServiceImpl implements AuthService {
             throw new UseNotFoundException("User Not Found with email " + email);
         }
         User userEntity = user.get();
-        String encryptedPassword = bCryptPasswordEncoder.encode(password);
-        if (!bCryptPasswordEncoder.matches(userEntity.getPassword(), encryptedPassword)) {
+        if (!bCryptPasswordEncoder.matches(password,userEntity.getPassword())) {
             throw new InvalidPasswordException("Invalid Password");
         }
         List<Session> sessions = sessionRepository.findByUserId(userEntity.getId());
         Long count = sessions.stream()
                 .filter(session -> session.getStatus() == SessionStatus.ACTIVE)
                 .count();
-        if (count > 0) {
+        if (count > 1) {
             throw new SessionLimitExceedException("Session Limit Exceeded");
         }
         Session session = new Session();
@@ -54,18 +54,33 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public boolean isTokenValid(String token,Long userId) {
+    public boolean isTokenValid(String token, Long userId) {
+        List<Session> sessions = sessionRepository.findByUserId(userId);
+        for (Session session : sessions) {
+            if (session.getToken().equals(token) && session.getStatus() == SessionStatus.ACTIVE) {
+                return true;
+            }
+        }
         return false;
     }
 
     @Override
-    public String signUp(String userName, String email, String password) {
+    public String signUp(String userName, String email, String password) throws DuplicateUserException {
+        Optional<User> user = userRepository.findByEmail(email);
+        if (user.isPresent()) {
+            throw new DuplicateUserException("User already exists with email " + email);
+        }
+        Optional<User> userOptional = userRepository.findByUserName(userName);
+        if (userOptional.isPresent()) {
+            throw new DuplicateUserException("User already exists with userName " + userName);
+        }
+
         User userEntity = new User();
         userEntity.setEmail(email);
         userEntity.setUserName(userName);
         String encryptedPassword = bCryptPasswordEncoder.encode(password);
         userEntity.setPassword(encryptedPassword);
-        userEntity=userRepository.save(userEntity);
+        userEntity = userRepository.save(userEntity);
         return userName;
     }
 }
