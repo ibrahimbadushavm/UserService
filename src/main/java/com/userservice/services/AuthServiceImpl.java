@@ -1,5 +1,6 @@
 package com.userservice.services;
 
+import com.userservice.dtos.SignupResponseDto;
 import com.userservice.exceptions.DuplicateUserException;
 import com.userservice.exceptions.InvalidPasswordException;
 import com.userservice.exceptions.SessionLimitExceedException;
@@ -10,6 +11,7 @@ import com.userservice.models.User;
 import com.userservice.repositories.SessionRepository;
 import com.userservice.repositories.UserRepository;
 import com.userservice.utils.RandomStringGenerator;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -22,10 +24,10 @@ public class AuthServiceImpl implements AuthService {
     private SessionRepository sessionRepository;
     private BCryptPasswordEncoder bCryptPasswordEncoder;
 
-    public AuthServiceImpl(UserRepository userRepository, SessionRepository sessionRepository) {
+    public AuthServiceImpl(UserRepository userRepository, SessionRepository sessionRepository, BCryptPasswordEncoder bCryptPasswordEncoder) {
+        this.bCryptPasswordEncoder = bCryptPasswordEncoder;
         this.userRepository = userRepository;
         this.sessionRepository = sessionRepository;
-        bCryptPasswordEncoder = new BCryptPasswordEncoder();
     }
 
     @Override
@@ -65,7 +67,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public String signUp(String userName, String email, String password) throws DuplicateUserException {
+    public SignupResponseDto signUp(String userName, String email, String password) throws DuplicateUserException {
         Optional<User> user = userRepository.findByEmail(email);
         if (user.isPresent()) {
             throw new DuplicateUserException("User already exists with email " + email);
@@ -81,6 +83,11 @@ public class AuthServiceImpl implements AuthService {
         String encryptedPassword = bCryptPasswordEncoder.encode(password);
         userEntity.setPassword(encryptedPassword);
         userEntity = userRepository.save(userEntity);
-        return userName;
+        return SignupResponseDto.from(userEntity.getEmail(), "User registered successfully");
+    }
+
+    @Override
+    public String logout(Long userId, String token) {
+        return "";
     }
 }

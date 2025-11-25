@@ -1,5 +1,6 @@
 package com.userservice.services;
 
+import com.userservice.dtos.SignupResponseDto;
 import com.userservice.exceptions.DuplicateUserException;
 import com.userservice.exceptions.InvalidPasswordException;
 import com.userservice.exceptions.SessionLimitExceedException;
@@ -11,5 +12,7 @@ public interface AuthService {
 
     boolean isTokenValid(String token,Long userId);
 
-    String signUp(String userName,String email, String password) throws DuplicateUserException;
+    SignupResponseDto signUp(String userName, String email, String password) throws DuplicateUserException;
+
+    String logout(Long userId, String token);
 }
