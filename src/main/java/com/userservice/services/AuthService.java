@@ -1,10 +1,7 @@
 package com.userservice.services;
 
 import com.userservice.dtos.SignupResponseDto;
-import com.userservice.exceptions.DuplicateUserException;
-import com.userservice.exceptions.InvalidPasswordException;
-import com.userservice.exceptions.SessionLimitExceedException;
-import com.userservice.exceptions.UseNotFoundException;
+import com.userservice.exceptions.*;
 
 public interface AuthService {
 
@@ -14,5 +11,5 @@ public interface AuthService {
 
     SignupResponseDto signUp(String userName, String email, String password) throws DuplicateUserException;
 
-    String logout(Long userId, String token);
+    String logout(Long userId, String token) throws UseNotFoundException, InvalidSessionException;
 }

@@ -1,10 +1,7 @@
 package com.userservice.controllers;
 
 import com.userservice.dtos.*;
-import com.userservice.exceptions.DuplicateUserException;
-import com.userservice.exceptions.InvalidPasswordException;
-import com.userservice.exceptions.SessionLimitExceedException;
-import com.userservice.exceptions.UseNotFoundException;
+import com.userservice.exceptions.*;
 import com.userservice.services.AuthService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -45,8 +42,11 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<String> logout(@RequestBody TokenValidRequestDto requestDto) {
-       return null;
+    public ResponseEntity<LogoutResponseDto> logout(@RequestBody TokenValidRequestDto requestDto) throws InvalidSessionException, UseNotFoundException {
+       String message= authService.logout(requestDto.getUserId(), requestDto.getToken());
+       LogoutResponseDto logoutResponseDto=new LogoutResponseDto();
+       logoutResponseDto.setMessage(message);
+       return new ResponseEntity<>(logoutResponseDto,HttpStatus.OK);
     }
 
 }
