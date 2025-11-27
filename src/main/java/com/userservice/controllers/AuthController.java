@@ -5,6 +5,8 @@ import com.userservice.exceptions.*;
 import com.userservice.services.AuthService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,8 +27,9 @@ public class AuthController {
         String token = authService.Login(loginRequestDto.getEmail(), loginRequestDto.getPassword());
         LoginResponseDto loginResponseDto = new LoginResponseDto();
         loginResponseDto.setEmail(loginRequestDto.getEmail());
-        loginResponseDto.setToken(token);
-        return new ResponseEntity<>(loginResponseDto, HttpStatus.OK);
+        MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+        headers.add("AUTH_TOKEN", token);
+        return new ResponseEntity<>(loginResponseDto,headers, HttpStatus.OK);
     }
 
     @PostMapping("/validatetoken")

@@ -11,10 +11,13 @@ import com.userservice.utils.RandomStringGenerator;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.net.PasswordAuthentication;
 import java.security.Key;
 import java.util.Date;
 import java.util.List;
@@ -25,11 +28,11 @@ import java.util.Optional;
 public class AuthServiceImpl implements AuthService {
     private UserRepository userRepository;
     private SessionRepository sessionRepository;
-    private BCryptPasswordEncoder bCryptPasswordEncoder;
+    private PasswordEncoder passwordEncoder;
     private static final Key SECRET_KEY = Keys.secretKeyFor(SignatureAlgorithm.HS256);
 
-    public AuthServiceImpl(UserRepository userRepository, SessionRepository sessionRepository, BCryptPasswordEncoder bCryptPasswordEncoder) {
-        this.bCryptPasswordEncoder = bCryptPasswordEncoder;
+    public AuthServiceImpl(UserRepository userRepository, SessionRepository sessionRepository, PasswordEncoder passwordEncoder) {
+        this.passwordEncoder = passwordEncoder;
         this.userRepository = userRepository;
         this.sessionRepository = sessionRepository;
     }
@@ -41,7 +44,7 @@ public class AuthServiceImpl implements AuthService {
             throw new UseNotFoundException("User Not Found with email " + email);
         }
         User userEntity = user.get();
-        if (!bCryptPasswordEncoder.matches(password,userEntity.getPassword())) {
+        if (!passwordEncoder.matches(password,userEntity.getPassword())) {
             throw new InvalidPasswordException("Invalid Password");
         }
         List<Session> sessions = sessionRepository.findByUserId(userEntity.getId());
@@ -95,25 +98,26 @@ public class AuthServiceImpl implements AuthService {
         User userEntity = new User();
         userEntity.setEmail(email);
         userEntity.setUserName(userName);
-        String encryptedPassword = bCryptPasswordEncoder.encode(password);
+        String encryptedPassword = passwordEncoder.encode(password);
         userEntity.setPassword(encryptedPassword);
         userEntity = userRepository.save(userEntity);
         return SignupResponseDto.from(userEntity.getEmail(), "User registered successfully");
     }
 
     @Override
+    @Transactional
     public String logout(Long userId, String token) throws UseNotFoundException, InvalidSessionException {
         Optional<User> userOptional = userRepository.findById(userId);
         if(userOptional.isEmpty()) {
             throw new UseNotFoundException("User Not Found with id " + userId);
         }
         Optional<Session> sessionOptional =sessionRepository.findByTokenAndUserId(token, userId);
-        if(sessionOptional.isEmpty()){
+        if(sessionOptional.isEmpty() || sessionOptional.get().getStatus()!=SessionStatus.ACTIVE) {
             throw new InvalidSessionException("Invalid Session");
         }
         Session session = sessionOptional.get();
         session.setStatus(SessionStatus.LOGGED_OUT);
-        session = sessionRepository.save(session);
+        sessionRepository.save(session);
         return "Logged out successfully";
     }
 }
