@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -17,7 +18,7 @@ public class CustomUserDetails implements UserDetails {
 
     private String username;
     private String password;
-    private List<GrantedAuthority> authorities;
+    private List<GrantedAuthority> authorities= new ArrayList<>();
     private boolean enabled;
     private boolean accountNonExpired;
     private boolean credentialsNonExpired;
