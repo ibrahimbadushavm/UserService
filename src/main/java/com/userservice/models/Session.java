@@ -1,5 +1,6 @@
 package com.userservice.models;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToOne;
 import lombok.Getter;
@@ -11,6 +12,7 @@ import java.util.Date;
 @Setter
 @Entity
 public class Session extends BaseModel {
+    @Column(columnDefinition = "TEXT")
     private String token;
     @ManyToOne
     private User user;

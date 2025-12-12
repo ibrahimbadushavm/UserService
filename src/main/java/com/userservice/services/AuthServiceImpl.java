@@ -19,10 +19,8 @@ import org.springframework.stereotype.Service;
 
 import java.net.PasswordAuthentication;
 import java.security.Key;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -54,10 +52,11 @@ public class AuthServiceImpl implements AuthService {
         if (count > 1) {
             throw new SessionLimitExceedException("Session Limit Exceeded");
         }
+        Set<String> roles=userEntity.getRoles().stream().map(role -> role.getRoleName()).collect(Collectors.toUnmodifiableSet());
         Map<String,Object> userDetails = Map.of(
                 "userId", userEntity.getId(),
                 "email", userEntity.getEmail(),
-                "roles",userEntity.getRoles()
+                "roles",roles
         );
         String jjwtToken= Jwts.builder()
                 .setClaims(userDetails)
