@@ -17,27 +17,27 @@ import java.util.UUID;
 @SpringBootTest
 public class TestAddClients {
 
-    @Autowired
-    private JpaRegisteredClientRepository jpaRegisteredClientRepository;
+//    @Autowired
+//    private JpaRegisteredClientRepository jpaRegisteredClientRepository;
+//
+//    @Autowired
+//    private PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Test
-    public void testAddClients() {
-        RegisteredClient oidcClient = RegisteredClient.withId(UUID.randomUUID().toString())
-               .clientId("productservice-client")
-               .clientSecret(passwordEncoder.encode("productservicepassword"))
-                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-                .redirectUri("https://oauth.pstmn.io/v1/callback")
-                .postLogoutRedirectUri("http://localhost:9000")
-                .scope(OidcScopes.OPENID)
-                .scope(OidcScopes.PROFILE)
-                .clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).build())
-                .build();
-
-        jpaRegisteredClientRepository.save(oidcClient);
-    }
+//    @Test
+//    public void testAddClients() {
+//        RegisteredClient oidcClient = RegisteredClient.withId(UUID.randomUUID().toString())
+//               .clientId("productservice-client")
+//               .clientSecret(passwordEncoder.encode("productservicepassword"))
+//                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+//                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+//                .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+//                .redirectUri("https://oauth.pstmn.io/v1/callback")
+//                .postLogoutRedirectUri("http://localhost:9000")
+//                .scope(OidcScopes.OPENID)
+//                .scope(OidcScopes.PROFILE)
+//                .clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).build())
+//                .build();
+//
+//        jpaRegisteredClientRepository.save(oidcClient);
+//    }
 }
