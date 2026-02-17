@@ -4,6 +4,7 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
@@ -183,6 +184,7 @@ public class SecurityConfig {
                     Authentication auth= context.getPrincipal();
                     Long userId = ((CustomUserDetails)auth.getPrincipal()).getUserId();
                     claims.put("user",userId);
+                    context.getClaims().expiresAt(Instant.now().plusSeconds(8 * 3600));
                 });
             }
         };
