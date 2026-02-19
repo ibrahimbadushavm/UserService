@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <appender name="CLOUDWATCH" class="ca.pjer.logback.AwsLogsAppender">
+        <layout>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <!-- In CONSOLE and CLOUDWATCH encoders -->
+            <pattern>%d{HH:mm:ss.SSS} [%X{traceId:-}] [%thread] %-5level %logger{36} - %msg%n</pattern>
+
+        </layout>
+        <!-- The name of the Log Group you created (or want to create) in AWS -->
+        <logGroupName>my-local-app-logs</logGroupName>
+        <!-- A unique name for this specific instance's log stream -->
+        <logStreamName>local-dev-stream</logStreamName>
+<!--        <region>us-east-1</region> &lt;!&ndash; Your AWS Region &ndash;&gt;-->
+        <logRegion>us-east-1</logRegion>
+        <maxFlushTimeMillis>30000</maxFlushTimeMillis>  <!-- Async after 30s -->
+        <maxBlockTimeMillis>1000</maxBlockTimeMillis>   <!-- Timeout blocks fast -->
+
+    </appender>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <!-- In CONSOLE and CLOUDWATCH encoders -->
+            <pattern>%d{HH:mm:ss.SSS} [%X{traceId:-}] [%thread] %-5level %logger{36} - %msg%n</pattern>
+
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="CLOUDWATCH" />
+    </root>
+</configuration>
