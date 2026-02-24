@@ -1,5 +1,9 @@
 package com.userservice.services;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.userservice.configs.KafkaProducerClient;
+import com.userservice.dtos.EmailEventDto;
 import com.userservice.dtos.SignupResponseDto;
 import com.userservice.exceptions.*;
 import com.userservice.models.Session;
@@ -12,6 +16,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import jakarta.transaction.Transactional;
+import org.apache.kafka.clients.producer.KafkaProducer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,15 +29,19 @@ import java.util.stream.Collectors;
 
 @Service
 public class AuthServiceImpl implements AuthService {
-    private UserRepository userRepository;
-    private SessionRepository sessionRepository;
-    private PasswordEncoder passwordEncoder;
+    private final UserRepository userRepository;
+    private final SessionRepository sessionRepository;
+    private final PasswordEncoder passwordEncoder;
     private static final Key SECRET_KEY = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+    private final KafkaProducerClient kafkaProducerClient;
+    private ObjectMapper objectMapper;
 
-    public AuthServiceImpl(UserRepository userRepository, SessionRepository sessionRepository, PasswordEncoder passwordEncoder) {
+    public AuthServiceImpl(UserRepository userRepository, SessionRepository sessionRepository, PasswordEncoder passwordEncoder, KafkaProducerClient kafkaProducerClient, ObjectMapper objectMapper) {
         this.passwordEncoder = passwordEncoder;
         this.userRepository = userRepository;
         this.sessionRepository = sessionRepository;
+        this.kafkaProducerClient = kafkaProducerClient;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -42,7 +51,7 @@ public class AuthServiceImpl implements AuthService {
             throw new UseNotFoundException("User Not Found with email " + email);
         }
         User userEntity = user.get();
-        if (!passwordEncoder.matches(password,userEntity.getPassword())) {
+        if (!passwordEncoder.matches(password, userEntity.getPassword())) {
             throw new InvalidPasswordException("Invalid Password");
         }
         List<Session> sessions = sessionRepository.findByUserId(userEntity.getId());
@@ -52,17 +61,17 @@ public class AuthServiceImpl implements AuthService {
         if (count > 1) {
             throw new SessionLimitExceedException("Session Limit Exceeded");
         }
-        Set<String> roles=userEntity.getRoles().stream().map(role -> role.getRoleName()).collect(Collectors.toUnmodifiableSet());
-        Map<String,Object> userDetails = Map.of(
+        Set<String> roles = userEntity.getRoles().stream().map(role -> role.getRoleName()).collect(Collectors.toUnmodifiableSet());
+        Map<String, Object> userDetails = Map.of(
                 "userId", userEntity.getId(),
                 "email", userEntity.getEmail(),
-                "roles",roles
+                "roles", roles
         );
-        String jjwtToken= Jwts.builder()
+        String jjwtToken = Jwts.builder()
                 .setClaims(userDetails)
-                .signWith(SECRET_KEY,SignatureAlgorithm.HS256)
+                .signWith(SECRET_KEY, SignatureAlgorithm.HS256)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis()+3600000))
+                .setExpiration(new Date(System.currentTimeMillis() + 3600000))
                 .compact();
         Session session = new Session();
         session.setUser(userEntity);
@@ -100,6 +109,17 @@ public class AuthServiceImpl implements AuthService {
         String encryptedPassword = passwordEncoder.encode(password);
         userEntity.setPassword(encryptedPassword);
         userEntity = userRepository.save(userEntity);
+        EmailEventDto emailEventDto = new EmailEventDto();
+        emailEventDto.setTo(email);
+        emailEventDto.setSubject("Welcome Email");
+        emailEventDto.setMessage("Welcome to the world of Quantum Computing, " + userName + "!");
+        emailEventDto.setFrom("ibrahimbadu665@gmail.com");
+
+        try {
+            kafkaProducerClient.sendMessage("email-topic-1", objectMapper.writeValueAsString(emailEventDto));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
         return SignupResponseDto.from(userEntity.getEmail(), "User registered successfully");
     }
 
@@ -107,11 +127,11 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public String logout(Long userId, String token) throws UseNotFoundException, InvalidSessionException {
         Optional<User> userOptional = userRepository.findById(userId);
-        if(userOptional.isEmpty()) {
+        if (userOptional.isEmpty()) {
             throw new UseNotFoundException("User Not Found with id " + userId);
         }
-        Optional<Session> sessionOptional =sessionRepository.findByTokenAndUserId(token, userId);
-        if(sessionOptional.isEmpty() || sessionOptional.get().getStatus()!=SessionStatus.ACTIVE) {
+        Optional<Session> sessionOptional = sessionRepository.findByTokenAndUserId(token, userId);
+        if (sessionOptional.isEmpty() || sessionOptional.get().getStatus() != SessionStatus.ACTIVE) {
             throw new InvalidSessionException("Invalid Session");
         }
         Session session = sessionOptional.get();
